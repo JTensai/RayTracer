@@ -41,7 +41,7 @@ bool Image::save(std::string file_name)
 	std::ofstream out(file_name);
 	if (out.is_open()) {
 
-		out << "P3\n" << width << " " << height << "\n1" << std::endl;
+		out << "P3\n" << width << " " << height << "\n255" << std::endl;
 			//P3
 			// Width Hieght
 			// Max color value

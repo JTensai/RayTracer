@@ -36,7 +36,7 @@ Shape* Shape::parseAndCreateShape(std::string given_line)
 				do {
 					std::getline(line, token, ' ');
 				} while (token == "");
-				float radius = stof(token);
+				radius = stof(token);
 			}
 			else if (token == "Material") {
 				material = new Material(line.str());
