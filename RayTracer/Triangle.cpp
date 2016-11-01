@@ -10,6 +10,9 @@ Triangle::Triangle(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, Material* material)
 	this->mat = material;
 }
 
+std::string Triangle::getType(){ 
+	return "Triangle"; 
+}
 
 Triangle::~Triangle()
 {

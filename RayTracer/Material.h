@@ -7,7 +7,7 @@ class Material
 {
 public:
 	Material();
-	Material(std::stringstream &line);
+	Material(std::string line);
 
 	virtual ~Material();
 

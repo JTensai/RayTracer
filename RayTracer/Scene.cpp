@@ -16,7 +16,10 @@ Scene::Scene(std::string file_name)
 			// for each line in the file
 			std::stringstream iss(line);
 			std::string token;
-			std::getline(iss, token, ' ');
+			do {
+				std::getline(iss, token, ' ');
+			} while (token == "");
+
 			if (token == "CameraLookAt") {
 				camera_look_at = parseVec3(iss);
 			}
@@ -27,13 +30,17 @@ Scene::Scene(std::string file_name)
 				camera_look_up = parseVec3(iss);
 			}
 			else if (token == "FieldOfView") {
-				std::getline(iss, token, ' ');
+				do {
+					std::getline(iss, token, ' ');
+				} while (token == "");
 				field_of_view = stof(token);
 			}
 			else if (token == "DirectionToLight") {
 				direction_to_light = parseVec3(iss);
 
-				std::getline(iss, token, ' ');
+				do {
+					std::getline(iss, token, ' ');
+				} while (token == "");
 				if (token == "LightColor") {
 					light_color = parseVec3(iss);
 				}
@@ -46,7 +53,7 @@ Scene::Scene(std::string file_name)
 			}
 			// anything else should be a shape
 			else  {
-				shapes.push_back(Shape::parseAndCreateShape(iss));			
+				shapes.push_back(Shape::parseAndCreateShape(iss.str()));			
 			}
 		}
 	}
