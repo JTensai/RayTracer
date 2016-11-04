@@ -30,7 +30,7 @@ int main() {
 	float horizontal_step = (-left * 2) / image.width;
 	float vertical_step = (top * 2) / image.height;
 
-	glm::vec3 cam = scene.camera_look_from;
+	glm::vec3 ray_origin = scene.camera_look_from;
 
 	for (int i = 0; i < num_rows; i++) {
 		for (int j = 0; j < num_cols; j++) {
@@ -38,104 +38,73 @@ int main() {
 			glm::vec3 pixel_color = scaleToInts(scene.background_color, 255);
 			
 			// calculate the source ray
-			glm::vec3 ray = glm::vec3(current_x, current_y, 0) - scene.camera_look_from;
-			ray = glm::normalize(ray);
+			glm::vec3 ray = glm::normalize(glm::vec3(current_x, current_y, 0) - scene.camera_look_from);
 
-			float dx = ray.x;
-			float dy = ray.y;
-			float dz = ray.z;
+			float collision_t = 0;
+			Shape* collision_shape = nullptr;
 
+
+			// find the closest shape to the camera
 			for (Shape* s : scene.shapes) {
 				if (s != nullptr) {
-					if (s->getType() == "Sphere") {
-
-						// http://www.ccs.neu.edu/home/fell/CSU540/programs/RayTracingFormulas.htm
-
-
-						Sphere* sphere = dynamic_cast<Sphere*>(s);
-
-						float a = (dx * dx) + (dy * dy) + (dz * dz);
-						float b = 2 * (dx*(cam.x - sphere->center.x) + dy*(cam.y - sphere->center.y) + dz*(cam.z - sphere->center.z));
-						float c = 
-							cam.x * cam.x
-							+ cam.y * cam.y
-							+ cam.z * cam.z
-							+ sphere->center.x * sphere->center.x
-							+ sphere->center.y * sphere->center.y
-							+ sphere->center.z * sphere->center.z
-							- 2 * (cam.x * sphere->center.x)
-							- 2 * (cam.y * sphere->center.y)
-							- 2 * (cam.z*sphere->center.z)
-							- sphere->radius * sphere->radius;
-
-						
-						float discriminant = (b * b) - (4 * a * c);
-
-						if (discriminant < 0) {
-							// no intersection
-							//pixel_color = scaleToInts(glm::vec3(0,1,0), 255);
-							//continue;
-						}
-						else if (discriminant == 0) {
-							//std::cout << "Discriminant: " << discriminant << std::endl;
-							// ray is tangent to sphere
-							pixel_color = scaleToInts(s->mat->diffuse, 255);
-						}
-						else {
-							// ray intersects the sphere in 2 points AKA goes through it, need to find the two points
-							float square_root = sqrt(discriminant);
-							float t1 = -b - square_root;
-							float t2 = -b + square_root;
-
-
-
-							//if (t1 > 0) {
-								// sphere is in front of us
-								glm::vec3 first_intersect, second_intersect;
-								if (t1 < t2) {
-									first_intersect = cam + ray * t1;
-									second_intersect = cam + ray * t2;
-								}
-								else {
-									first_intersect = cam + ray * t2;
-									second_intersect = cam + ray * t1;
-								}
-
-								glm::vec3 n(
-									(first_intersect.x - sphere->center.x) / sphere->radius,
-									(first_intersect.y - sphere->center.y) / sphere->radius,
-									(first_intersect.z - sphere->center.z) / sphere->radius
-								);
-
-								float num = glm::dot(n, scene.direction_to_light);
-								//std::cout << num << std::endl;
-
-								float kd = 0.9f;
-								float ka = 0.1f;
-
-								glm::vec3 calculated_color((s->mat->diffuse * kd * num) + (s->mat->diffuse * ka));
-								//glm::vec3 calculated_color((kd*num*color.x + ka*color.x, kd*num*color.y + ka*color.y, kd*num*color.z + ka*color.z));
-
-
-								pixel_color = scaleToInts(s->mat->diffuse, 255);
-							//}
-							//else if (t2 > 0) {
-							//	// we are inside the sphere
-							//}
-							//else {
-							//	// sphere is behind the camera
-							//}
-
-
-							
-						}
-					}
-					if (s->getType() == "Triangle") {
-						//std::cout << glm::to_string(dynamic_cast<Triangle*>(s)->p1) << std::endl;
+					float hit_t = s->getHitLocationOnRay(ray, ray_origin);
+					if (hit_t > 0 && (hit_t < collision_t || collision_t == 0)) {
+						collision_t = hit_t;
+						collision_shape = s;
 					}
 				}
 			}
 
+
+			// a collision occured on one of the shapes in front of the camera
+			// collision_shape is the object closest to the camera that got hit
+			if (collision_shape != nullptr) {
+				glm::vec3 intersection_point = ray_origin + ray * collision_t;
+
+				// Check if pixel is in shadow or not
+				glm::vec3 shadow_ray = scene.direction_to_light - intersection_point;
+				bool is_in_shadow = false;
+				for (Shape* s : scene.shapes) {
+					if (s != nullptr) {
+						float hit_t = s->getHitLocationOnRay(shadow_ray, intersection_point + shadow_ray * 0.0001f);
+						if (hit_t > 0) {
+							is_in_shadow = true;
+							break;
+						}
+					}
+				}
+
+
+				glm::vec3 phong = glm::vec3(0);
+				float clamped_n_dot_l = 0;
+
+				if (!is_in_shadow) {
+					glm::vec3 normal = collision_shape->getNormalAtPoint(intersection_point);
+
+					// angle between light and the normal
+					float n_dot_l = glm::dot(normal, scene.direction_to_light);
+					clamped_n_dot_l = glm::max(0.f, n_dot_l);
+					
+					// camera position
+					glm::vec3 e = glm::normalize(scene.camera_look_from - intersection_point);
+					// reflectance value
+					glm::vec3 r = 2.f * normal * n_dot_l - scene.direction_to_light;
+					float e_dot_r = glm::dot(e, r);
+					float clamped_e_dot_r = glm::max(0.f, e_dot_r);
+					
+					phong = scene.light_color * collision_shape->mat->specular_highlight * pow(clamped_e_dot_r, collision_shape->mat->phong_constant);
+
+
+
+					if (collision_shape->getType() == "Triangle") {
+						//std::cout << glm::to_string(phong) << std::endl;
+						if (glm::length(phong) > 0) {
+							//phong = glm::vec3(1);
+						}
+					}
+				}
+				pixel_color = scaleToInts(collision_shape->mat->diffuse * (scene.ambient_light + (scene.light_color * clamped_n_dot_l)) + phong, 255);
+			}
 
 			image.addNextPixel(pixel_color);
 			current_x += horizontal_step;

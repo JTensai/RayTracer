@@ -30,8 +30,8 @@ static glm::vec3 parseVec3(std::stringstream &line) {
 
 static glm::vec3 scaleToInts(glm::vec3 original, int scale_factor) {
 	int r, g, b;
-	r = (int)(original.x * scale_factor);
-	g = (int)(original.y * scale_factor);
-	b = (int)(original.z * scale_factor);
+	r = (int)(glm::min(original.x, 1.f) * scale_factor);
+	g = (int)(glm::min(original.y, 1.f) * scale_factor);
+	b = (int)(glm::min(original.z, 1.f) * scale_factor);
 	return glm::vec3(r, g, b);
 }

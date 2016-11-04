@@ -51,6 +51,7 @@ Shape* Shape::parseAndCreateShape(std::string given_line)
 	return nullptr;
 }
 
+
 Shape::~Shape()
 {
 }

@@ -53,7 +53,7 @@ Scene::Scene(std::string file_name)
 			}
 			// anything else should be a shape
 			else  {
-				shapes.push_back(Shape::parseAndCreateShape(iss.str()));			
+				 shapes.push_back(Shape::parseAndCreateShape(iss.str()));	// the correct way to do this
 			}
 		}
 	}
