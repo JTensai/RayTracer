@@ -12,7 +12,7 @@ void print(std::string s) {
 }
 
 int main() {
-	Scene scene("./res/diffuse.rayTracing");
+	Scene scene("./res/SceneIII.rayTracing");
 	
 	int num_cols = 500;
 	int num_rows = 500;
@@ -62,7 +62,7 @@ int main() {
 				glm::vec3 intersection_point = ray_origin + ray * collision_t;
 
 				// Check if pixel is in shadow or not
-				glm::vec3 shadow_ray = scene.direction_to_light - intersection_point;
+				glm::vec3 shadow_ray = scene.direction_to_light;// - intersection_point;
 				bool is_in_shadow = false;
 				for (Shape* s : scene.shapes) {
 					if (s != nullptr) {
